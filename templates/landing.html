@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Instant Dashboard — AI-Powered Dashboard Generator</title>
+    <meta name="description"
+        content="Generate stunning, professional dashboards from your JSON data in seconds. Powered by AI with zero coding required.">
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="icon"
+        href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
+</head>
+
+<body>
+    <!-- Animated background -->
+    <div class="bg-grid"></div>
+    <div class="bg-gradient-orb bg-gradient-orb--1"></div>
+    <div class="bg-gradient-orb bg-gradient-orb--2"></div>
+    <div class="bg-gradient-orb bg-gradient-orb--3"></div>
+
+    <!-- Navigation -->
+    <nav class="nav" id="main-nav">
+        <div class="container">
+            <a href="/" class="nav__logo" id="nav-logo">
+                <span class="nav__logo-icon">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                    </svg>
+                </span>
+                Instant Dashboard
+            </a>
+            <div class="nav__links">
+                <a href="#features" class="nav__link" id="nav-features">Features</a>
+                <a href="#how-it-works" class="nav__link" id="nav-how">How It Works</a>
+                <a href="/generate" class="nav__link nav__link--cta" id="nav-generate-cta">Generate →</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="section section--hero" id="hero">
+        <div class="container">
+            <div class="fade-in">
+                <div class="badge" style="margin-bottom: 24px; display: inline-flex;">
+                    <span class="badge__dot"></span>
+                    AI-Powered Dashboard Generation
+                </div>
+            </div>
+            <h1 class="heading-xl fade-in fade-in--delay-1" style="max-width: 800px; margin: 0 auto 24px;">
+                Turn JSON Data Into<br>
+                <span class="text-gradient">Beautiful Dashboards</span>
+            </h1>
+            <p class="text-body fade-in fade-in--delay-2" style="max-width: 560px; margin: 0 auto 40px;">
+                Paste your data. Describe your vision. Get a fully rendered, professional dashboard in seconds — no
+                coding required.
+            </p>
+            <div class="fade-in fade-in--delay-3"
+                style="display: flex; gap: 16px; justify-content: center; flex-wrap: wrap;">
+                <a href="/generate" class="btn btn--primary btn--large" id="hero-cta">
+                    <span>Generate Dashboard</span>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M5 12h14M12 5l7 7-7 7" />
+                    </svg>
+                </a>
+                <a href="#how-it-works" class="btn btn--secondary btn--large" id="hero-learn">
+                    Learn More
+                </a>
+            </div>
+
+            <!-- Preview mockup -->
+            <div class="fade-in fade-in--delay-4"
+                style="margin-top: 80px; max-width: 900px; margin-left: auto; margin-right: auto;">
+                <div class="card" style="overflow: hidden; box-shadow: var(--shadow-lg), var(--shadow-glow);">
+                    <div class="preview-container__toolbar">
+                        <div class="preview-container__dots">
+                            <span class="preview-container__dot preview-container__dot--red"></span>
+                            <span class="preview-container__dot preview-container__dot--yellow"></span>
+                            <span class="preview-container__dot preview-container__dot--green"></span>
+                        </div>
+                        <span class="preview-container__title">instant-dashboard.vercel.app</span>
+                        <div style="width: 40px;"></div>
+                    </div>
+                    <div
+                        style="background: linear-gradient(135deg, #0f172a, #1e293b); padding: 48px; text-align: left;">
+                        <div class="hero-mockup-grid"
+                            style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px;">
+                            <div
+                                style="background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 12px; padding: 24px;">
+                                <div
+                                    style="font-size: 0.75rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px;">
+                                    Revenue</div>
+                                <div style="font-size: 1.75rem; font-weight: 700; color: #f1f5f9;">$84,230</div>
+                                <div style="font-size: 0.8rem; color: #22c55e; margin-top: 4px;">↑ 12.5%</div>
+                            </div>
+                            <div
+                                style="background: rgba(139, 92, 246, 0.1); border: 1px solid rgba(139, 92, 246, 0.2); border-radius: 12px; padding: 24px;">
+                                <div
+                                    style="font-size: 0.75rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px;">
+                                    Users</div>
+                                <div style="font-size: 1.75rem; font-weight: 700; color: #f1f5f9;">2,847</div>
+                                <div style="font-size: 0.8rem; color: #22c55e; margin-top: 4px;">↑ 8.3%</div>
+                            </div>
+                            <div
+                                style="background: rgba(6, 182, 212, 0.1); border: 1px solid rgba(6, 182, 212, 0.2); border-radius: 12px; padding: 24px;">
+                                <div
+                                    style="font-size: 0.75rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px;">
+                                    Conversion</div>
+                                <div style="font-size: 1.75rem; font-weight: 700; color: #f1f5f9;">3.24%</div>
+                                <div style="font-size: 0.8rem; color: #ef4444; margin-top: 4px;">↓ 1.2%</div>
+                            </div>
+                        </div>
+                        <div
+                            style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; padding: 24px; height: 120px; display: flex; align-items: center; justify-content: center;">
+                            <div style="display: flex; align-items: flex-end; gap: 8px; height: 80px;">
+                                <div
+                                    style="width: 28px; background: linear-gradient(to top, #6366f1, #818cf8); border-radius: 4px 4px 0 0; height: 40%;">
+                                </div>
+                                <div
+                                    style="width: 28px; background: linear-gradient(to top, #6366f1, #818cf8); border-radius: 4px 4px 0 0; height: 65%;">
+                                </div>
+                                <div
+                                    style="width: 28px; background: linear-gradient(to top, #6366f1, #818cf8); border-radius: 4px 4px 0 0; height: 45%;">
+                                </div>
+                                <div
+                                    style="width: 28px; background: linear-gradient(to top, #6366f1, #818cf8); border-radius: 4px 4px 0 0; height: 80%;">
+                                </div>
+                                <div
+                                    style="width: 28px; background: linear-gradient(to top, #6366f1, #818cf8); border-radius: 4px 4px 0 0; height: 55%;">
+                                </div>
+                                <div
+                                    style="width: 28px; background: linear-gradient(to top, #6366f1, #818cf8); border-radius: 4px 4px 0 0; height: 90%;">
+                                </div>
+                                <div
+                                    style="width: 28px; background: linear-gradient(to top, #6366f1, #818cf8); border-radius: 4px 4px 0 0; height: 70%;">
+                                </div>
+                                <div
+                                    style="width: 28px; background: linear-gradient(to top, #6366f1, #818cf8); border-radius: 4px 4px 0 0; height: 95%;">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="section" id="features">
+        <div class="container">
+            <div style="text-align: center; margin-bottom: 16px;">
+                <div class="badge" style="display: inline-flex;">
+                    <span class="badge__dot"></span>
+                    Capabilities
+                </div>
+            </div>
+            <h2 class="heading-lg" style="text-align: center;">
+                Everything You Need to<br>
+                <span class="text-gradient">Visualize Your Data</span>
+            </h2>
+            <div class="features-grid">
+                <div class="card feature-card">
+                    <div class="feature-card__icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 2a10 10 0 0 1 7.38 16.75" />
+                            <path d="M12 8v8" />
+                            <path d="M16 12h-8" />
+                            <circle cx="12" cy="12" r="10" />
+                        </svg>
+                    </div>
+                    <h3 class="feature-card__title">AI-Powered Generation</h3>
+                    <p class="feature-card__desc">Leverages advanced LLMs to understand your data structure and
+                        transform it into professional HTML dashboards.</p>
+                </div>
+                <div class="card feature-card">
+                    <div class="feature-card__icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                        </svg>
+                    </div>
+                    <h3 class="feature-card__title">Data Integrity</h3>
+                    <p class="feature-card__desc">Strict validation ensures every number in your dashboard exactly
+                        matches your source data. Zero hallucination policy.</p>
+                </div>
+                <div class="card feature-card">
+                    <div class="feature-card__icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                            <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                        </svg>
+                    </div>
+                    <h3 class="feature-card__title">Sandboxed Rendering</h3>
+                    <p class="feature-card__desc">All generated HTML is rendered in a secure sandboxed iframe with no
+                        script execution — safe by design.</p>
+                </div>
+                <div class="card feature-card">
+                    <div class="feature-card__icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="13.5" cy="6.5" r=".5" />
+                            <circle cx="17.5" cy="10.5" r=".5" />
+                            <circle cx="8.5" cy="7.5" r=".5" />
+                            <circle cx="6.5" cy="12.5" r=".5" />
+                            <path
+                                d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z" />
+                        </svg>
+                    </div>
+                    <h3 class="feature-card__title">Custom Styling</h3>
+                    <p class="feature-card__desc">Describe your preferred colors, layout, and emphasis in plain English.
+                        The AI adapts to your vision.</p>
+                </div>
+                <div class="card feature-card">
+                    <div class="feature-card__icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                        </svg>
+                    </div>
+                    <h3 class="feature-card__title">Instant Results</h3>
+                    <p class="feature-card__desc">Get a fully rendered dashboard preview in seconds. No setup, no
+                        packages, no configuration required.</p>
+                </div>
+                <div class="card feature-card">
+                    <div class="feature-card__icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+                            <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
+                        </svg>
+                    </div>
+                    <h3 class="feature-card__title">Export Ready</h3>
+                    <p class="feature-card__desc">The generated HTML is self-contained and can be downloaded, embedded,
+                        or shared as a standalone file.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works Section -->
+    <section class="section" id="how-it-works" style="background: var(--bg-secondary);">
+        <div class="container">
+            <div style="text-align: center; margin-bottom: 16px;">
+                <div class="badge" style="display: inline-flex;">
+                    <span class="badge__dot"></span>
+                    Simple Process
+                </div>
+            </div>
+            <h2 class="heading-lg" style="text-align: center;">
+                Three Steps to Your<br>
+                <span class="text-gradient">Perfect Dashboard</span>
+            </h2>
+            <div class="steps-grid">
+                <div class="card step-card">
+                    <div class="step-card__number">1</div>
+                    <h3 class="step-card__title">Paste Your JSON</h3>
+                    <p class="step-card__desc">Drop in your structured JSON data — sales reports, analytics, metrics, or
+                        any dataset you want to visualize.</p>
+                </div>
+                <div class="card step-card">
+                    <div class="step-card__number">2</div>
+                    <h3 class="step-card__title">Describe Your Style</h3>
+                    <p class="step-card__desc">Tell the AI how you want it to look — dark theme, minimal cards,
+                        corporate layout, colorful charts — anything.</p>
+                </div>
+                <div class="card step-card">
+                    <div class="step-card__number">3</div>
+                    <h3 class="step-card__title">Get Your Dashboard</h3>
+                    <p class="step-card__desc">In seconds, receive a beautiful, self-contained HTML dashboard rendered
+                        live in your browser.</p>
+                </div>
+            </div>
+            <div style="text-align: center; margin-top: 48px;">
+                <a href="/generate" class="btn btn--primary btn--large" id="steps-cta">
+                    <span>Try It Now</span>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M5 12h14M12 5l7 7-7 7" />
+                    </svg>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p class="footer__text">
+                Built with
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                    stroke-linecap="round" stroke-linejoin="round"
+                    style="display: inline; vertical-align: middle; margin: 0 2px;">
+                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                </svg>
+                by Instant Dashboard &middot; Stateless &middot; No data persisted &middot; Powered by AI
+            </p>
+        </div>
+    </footer>
+</body>
+
+</html>
