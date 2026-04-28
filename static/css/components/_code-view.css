@@ -1,0 +1,76 @@
+/* ==========================================================================
+   Code View — Live code display with line numbers
+   ========================================================================== */
+
+.live-code-view {
+    display: block;
+    min-height: 500px;
+    max-height: calc(100vh - 180px);
+    overflow: auto;
+    background: #0d1117;
+    font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', 'Courier New', monospace;
+    font-size: 13px;
+    line-height: 22px;
+    max-width: 100%;
+}
+
+.live-code-view__lines {
+    display: table;
+    min-width: 100%;
+    padding: 16px 0;
+}
+
+.code-line {
+    display: table-row;
+    min-height: 22px;
+}
+
+.code-line__num {
+    display: table-cell;
+    width: 48px;
+    min-width: 48px;
+    padding: 0 14px 0 16px;
+    text-align: right;
+    color: rgba(139, 148, 158, 0.4);
+    user-select: none;
+    white-space: nowrap;
+    position: sticky;
+    left: 0;
+    background: #0a0e14;
+    border-right: 1px solid rgba(255, 255, 255, 0.06);
+    vertical-align: top;
+    font-size: inherit;
+    line-height: inherit;
+}
+
+.code-line__text {
+    display: table-cell;
+    padding: 0 20px 0 16px;
+    white-space: pre;
+    color: #c9d1d9;
+    tab-size: 2;
+    vertical-align: top;
+    font-size: inherit;
+    line-height: inherit;
+    word-break: normal;
+    overflow-wrap: normal;
+}
+
+/* --- Scrollbar for Live Code View --- */
+.live-code-view::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+.live-code-view::-webkit-scrollbar-track {
+    background: #0d1117;
+}
+
+.live-code-view::-webkit-scrollbar-thumb {
+    background: rgba(139, 148, 158, 0.3);
+    border-radius: 3px;
+}
+
+.live-code-view::-webkit-scrollbar-thumb:hover {
+    background: rgba(139, 148, 158, 0.5);
+}

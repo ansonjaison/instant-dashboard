@@ -1,0 +1,75 @@
+/* ==========================================================================
+   Forms — Form groups, labels, textareas, inputs, character counter
+   ========================================================================== */
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.form-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+.form-label__hint {
+    font-weight: 400;
+    text-transform: none;
+    letter-spacing: normal;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+}
+
+.form-textarea,
+.form-input {
+    width: 100%;
+    padding: 14px 16px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    color: var(--text-primary);
+    font-family: 'Inter', monospace;
+    font-size: 0.9rem;
+    resize: vertical;
+    transition: var(--transition-fast);
+    line-height: 1.6;
+}
+
+.form-textarea:focus,
+.form-input:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+.form-textarea::placeholder,
+.form-input::placeholder {
+    color: var(--text-muted);
+}
+
+.form-textarea--json {
+    font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+    font-size: 0.82rem;
+    min-height: 220px;
+    tab-size: 2;
+}
+
+/* --- Char Counter --- */
+.char-counter {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    text-align: right;
+    margin-top: -4px;
+}
+
+.char-counter--warning {
+    color: #f59e0b;
+}
+
+.char-counter--error {
+    color: #ef4444;
+}

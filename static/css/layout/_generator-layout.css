@@ -1,0 +1,33 @@
+/* ==========================================================================
+   Generator Layout — Two-column generator page layout
+   ========================================================================== */
+
+.generator-layout {
+    display: grid;
+    grid-template-columns: 420px 1fr;
+    gap: 24px;
+    padding-top: 100px;
+    min-height: 100vh;
+    max-width: 100%;
+    overflow: hidden;
+}
+
+.generator-sidebar {
+    padding: 24px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    position: sticky;
+    top: 100px;
+    align-self: start;
+    max-height: calc(100vh - 120px);
+    overflow-y: auto;
+}
+
+.generator-main {
+    padding: 24px 0;
+    min-height: calc(100vh - 100px);
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
+}

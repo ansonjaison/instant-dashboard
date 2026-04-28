@@ -80,22 +80,35 @@ The system follows a **Stateless Serverless** pattern to ensure scalability and 
 
 ```
 /
-├── api/                  # Server-side logic
-│   └── index.py          # Flask app — routes, SSE streaming, retry logic
-├── services/             # External integrations
-│   └── llm_service.py    # LLM streaming client (OpenAI-compatible)
-├── utils/                # Shared utilities
-│   └── validator.py      # Validation & sanitisation pipeline
-├── templates/            # Jinja2 HTML templates
-│   ├── landing.html      # Landing page
-│   └── generate.html     # Generator UI
-├── static/               # Static assets
-│   ├── css/style.css     # Design system & global styles
-│   └── js/generator.js   # Client-side SSE handler, sample data/prompts
-├── .env.example          # Environment variable template
-└── docs/                 # Technical documentation
+├── api/                          # Server-side logic
+│   └── index.py                  # Flask app — routes, SSE streaming, retry logic
+├── config/                       # Configuration & prompt templates
+│   └── prompts.py                # SYSTEM_PROMPT (LLM behavior rules)
+├── services/                     # External integrations
+│   └── llm_service.py            # LLM streaming client (OpenAI-compatible)
+├── utils/                        # Shared utilities
+│   └── validator.py              # Validation & sanitisation pipeline
+├── templates/                    # Jinja2 HTML templates
+│   ├── landing.html              # Landing page
+│   └── generate.html             # Generator UI
+├── static/                       # Static assets
+│   ├── css/
+│   │   ├── style.css             # Import manifest (~35 lines, @import TOC)
+│   │   ├── base/                 # _variables.css, _reset.css, _typography.css
+│   │   ├── layout/               # _grid.css, _navigation.css, _footer.css, _generator-layout.css
+│   │   ├── components/           # _buttons.css, _cards.css, _forms.css, _preview.css, etc.
+│   │   ├── effects/              # _backgrounds.css, _animations.css
+│   │   └── responsive/           # _breakpoints.css
+│   └── js/
+│       ├── generator.js          # Page orchestrator (state-driven render loop)
+│       ├── data/samples.js       # Sample JSON datasets & design prompts
+│       ├── utils/dom.js          # DOM utility functions
+│       └── services/streamClient.js  # SSE streaming client class
+├── .env.example                  # Environment variable template
+└── docs/                         # Technical documentation
     ├── INSTRUCTION_MANUAL.md
-    └── PROJECT_LOG.md
+    ├── PROJECT_LOG.md
+    └── project_doc.md
 ```
 
 ## 🔗 API Overview

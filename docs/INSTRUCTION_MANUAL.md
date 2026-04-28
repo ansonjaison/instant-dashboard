@@ -1,7 +1,7 @@
 # Instant Dashboard — Technical Instruction Manual
 
-> **Version:** 1.1.0
-> **Last Updated:** 2026-02-12
+> **Version:** 1.3.0
+> **Last Updated:** 2026-04-28
 > **Audience:** Developers, Auditors, Systems Architects
 
 ---
@@ -41,27 +41,60 @@ graph TD
 
 ## SECTION B – Frontend Technical Breakdown
 
+### Module Architecture
+The frontend uses **ES6 modules** loaded via `<script type="module">`. The monolithic script has been decomposed into four focused files:
+
+| Module | Responsibility |
+|--------|---------------|
+| `js/generator.js` | Page orchestrator — imports all modules, owns the central `state` object, drives the single `render()` update loop |
+| `js/data/samples.js` | Pure data — exports `SAMPLES` (3 JSON datasets) and `SAMPLE_PROMPTS` (matching design prompts) |
+| `js/utils/dom.js` | DOM helpers — exports `showError()`, `hideError()`, `setLoading()`, `validateJSON()`. Receives DOM targets as arguments (no module-level queries). |
+| `js/services/streamClient.js` | Network layer — exports `StreamClient` class that owns the `fetch → ReadableStream → SSE-parse` pipeline. Zero DOM knowledge; communicates via callbacks (`onChunk`, `onRetry`, `onDone`, `onError`). |
+
 ### Component List
 - **`landing.html`**: Marketing page with CSS grid animations (`.bg-grid`).
 - **`generate.html`**: The main application interface. Splits screen into sidebar (input) and main area (preview).
 - **`json-input`**: A `textarea` specifically styled for code input (`font-family: monospace`).
 - **`preview-iframe`**: Utilizing the `srcdoc` attribute to render HTML content without a round-trip.
-- **`live-code-view`**: A scrolling value that displays the raw HTML as it packages in real-time.
+- **`live-code-view`**: A scrolling view that displays the raw HTML as it streams in real-time.
 
 ### State Management
-The frontend relies on **DOM-based state management** via `generator.js`.
-- **`generatedHTML`**: A global variable stores the validated HTML payload for the "Download" functionality.
-- **UI States**: `idle`, `streaming`, `complete` (iframe visible), `error`.
+The frontend uses a **centralized state object** with a **single `render()` function** that reconciles the entire UI.
+
+**State object keys:**
+| Key | Type | Purpose |
+|-----|------|---------|
+| `isGenerating` | `boolean` | Controls button disabled state and spinner |
+| `view` | `'code' \| 'preview'` | Active tab |
+| `streamStatus` | `'idle' \| 'streaming' \| 'retrying' \| 'done' \| 'error'` | Status indicator dot + label |
+| `errorMessage` | `string \| null` | Error banner content |
+| `generatedHTML` | `string \| null` | Final sanitised HTML for preview/download |
+| `rawCode` | `string` | Accumulated raw chunks for live code view |
+| `charCount` | `number` | Character count displayed in stats bar |
+| `iframeSrcdocSet` | `boolean` | Guards against iframe reload on tab switches |
+
+Every user action or stream callback mutates `state`, then calls `render()`.
+
+### XSS Prevention
+The `renderCodeLines()` function uses **programmatic DOM construction** with `textContent` exclusively — no `innerHTML` — making it 100% XSS-proof regardless of what the LLM generates.
 
 ### Form Validation Logic
 Client-side validation occurs before any network request:
-1.  **JSON Format**: `JSON.parse()` is attempted in a `try/catch` block.
+1.  **JSON Format**: `JSON.parse()` is attempted in a `try/catch` block (via `dom.js → validateJSON()`).
 2.  **Prompt Length**: Enforced via `maxlength` (500 chars).
 3.  **Empty Fields**: Both JSON and Prompt are required.
 
 ---
 
 ## SECTION C – Backend Technical Breakdown
+
+### Package Structure
+| Package | Module | Purpose |
+|---------|--------|---------|
+| `api/` | `index.py` | Flask app — routes, SSE streaming, retry logic |
+| `config/` | `prompts.py` | `SYSTEM_PROMPT` constant — single source of truth for LLM behavior rules |
+| `services/` | `llm_service.py` | LLM streaming client — imports `SYSTEM_PROMPT` from `config.prompts` |
+| `utils/` | `validator.py` | 4-stage HTML validation & sanitisation pipeline |
 
 ### Route Listing
 | Route | Method | Description |
@@ -78,7 +111,7 @@ Client-side validation occurs before any network request:
     - `validate_prompt`: Checks length constraints.
 3.  **LLM Integration & Auto-Retry Loop**:
     - Initiates a retry loop (up to 3 attempts) in case the LLM API routes to an incompatible model (e.g., reasoning-only model failing structure).
-    - Constructs system prompt + user JSON and calls `services.llm_service.stream_llm`.
+    - Constructs system prompt (from `config/prompts.py`) + user JSON and calls `services.llm_service.stream_llm`.
 4.  **Streaming Response**:
     - Yields `event: data` payload `{"chunk": "..."}` for each token.
     - Handles reasoning model variations (e.g., buffering `delta.reasoning` if `delta.content` is empty).

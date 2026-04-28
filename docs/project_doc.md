@@ -33,22 +33,38 @@ instant-dashboard/
 ├── api/
 │   └── index.py              ← Flask app entry point; all routes + SSE retry engine
 │
+├── config/
+│   ├── __init__.py           ← Package marker
+│   └── prompts.py            ← SYSTEM_PROMPT (LLM behavior tuning, imported by llm_service)
+│
 ├── services/
 │   └── llm_service.py        ← LLM API client; streaming parser; reasoning fallback
 │
 ├── utils/
-│   ├── __init__.py           ← Empty package marker
+│   ├── __init__.py           ← Package marker
 │   └── validator.py          ← 4-stage HTML validation & sanitisation pipeline
 │
 ├── templates/                ← Jinja2 templates (served by Flask)
 │   ├── landing.html          ← Marketing landing page (/, no JS logic)
-│   └── generate.html         ← Main generator SPA shell (SSE client in generator.js)
+│   └── generate.html         ← Main generator SPA shell (ES6 module entry: generator.js)
 │
 ├── static/
 │   ├── css/
-│   │   └── style.css         ← Full design system (1362 lines): tokens, layout, animations
+│   │   ├── style.css         ← Import manifest (~35 lines, native @import TOC)
+│   │   ├── base/             ← _variables.css, _reset.css, _typography.css
+│   │   ├── layout/           ← _grid.css, _navigation.css, _footer.css, _generator-layout.css
+│   │   ├── components/       ← _buttons.css, _cards.css, _badges.css, _forms.css, _errors.css,
+│   │   │                        _spinner.css, _preview.css, _code-view.css, _history.css
+│   │   ├── effects/          ← _backgrounds.css, _animations.css
+│   │   └── responsive/       ← _breakpoints.css
 │   └── js/
-│       └── generator.js      ← SSE client, live code view, sample data/prompts, retry UX
+│       ├── generator.js      ← Page orchestrator (state-driven render loop)
+│       ├── data/
+│       │   └── samples.js    ← Sample JSON datasets & design prompts (pure data, no DOM)
+│       ├── utils/
+│       │   └── dom.js        ← DOM helpers: showError, hideError, setLoading, validateJSON
+│       └── services/
+│           └── streamClient.js ← StreamClient class (fetch → SSE parser → callbacks)
 │
 ├── docs/
 │   ├── INSTRUCTION_MANUAL.md
@@ -180,9 +196,9 @@ function event_stream():
 | `LLM_MODEL` | `minimax-m2.5-free` | Model ID sent in payload |
 | `LLM_API_URL` | `https://opencode.ai/zen/v1/chat/completions` | POST endpoint |
 
-**System Prompt (sent as `role: system`):**
+**System Prompt (imported from `config/prompts.py`, sent as `role: system`):**
 
-10 strict rules injected before every request:
+10 strict rules injected before every request. The prompt is maintained in `config/prompts.py` and imported via `from config.prompts import SYSTEM_PROMPT`, keeping prompt tuning separate from execution logic:
 1. Output ONLY a valid `<!DOCTYPE html>` document.
 2. Use only inline `<style>` tags — no CDNs.
 3. No markdown, explanations, or code fences.
@@ -292,64 +308,127 @@ sanitized = re.sub(r'src\s*=\s*"javascript:[^"]*"', 'src=""', ...)
 
 ---
 
-### 5.4 `static/js/generator.js` — Client-Side Engine
+### 5.4 `static/js/` — Client-Side Engine (ES6 Modules)
 
-**IIFE pattern** (`(function(){ 'use strict'; ... })()`) — all variables are scoped, no global pollution.
+The frontend uses **ES6 modules** loaded via `<script type="module">`. The monolithic script has been decomposed into four focused files with clean separation of concerns:
 
-**Key state variables:**
+```
+js/
+├── generator.js              ← Page orchestrator
+├── data/samples.js           ← Pure data (no DOM)
+├── utils/dom.js              ← DOM helpers (no state)
+└── services/streamClient.js  ← Network layer (no DOM)
+```
 
-| Variable | Type | Purpose |
-|----------|------|---------|
-| `generatedHTML` | `string\|null` | Holds final sanitised HTML after generation |
-| `currentView` | `'code'\|'preview'` | Tracks which tab is active |
-| `rawStreamedCode` | `string` | Accumulated raw chunks for live code view |
-| `renderedLineCount` | `number` | Tracks how many lines have been rendered (enables incremental update) |
-| `iframeSrcdocSet` | `boolean` | Prevents iframe reload on repeated tab switches |
+#### 5.4a `data/samples.js` — Sample Data Module
 
-**Sample Data & Prompts:**
+Pure data module — no DOM or side-effect dependencies. Exports two objects:
 
-Three hardcoded datasets in `SAMPLES` object and matching prompts in `SAMPLE_PROMPTS`:
+- **`SAMPLES`**: Three JSON datasets (stringified with pretty-print):
 
-| Key | JSON Dataset | Sample Prompt Summary |
+| Key | JSON Dataset | Content |
 |-----|-------------|----------------------|
-| `sales` | TechCorp Q4 2025 — revenue, departments, products | Dark executive dashboard with gradient KPI cards |
-| `analytics` | dashboard.app Jan 2026 — traffic, devices, pages | White/blue analytics dashboard with card metrics |
-| `hr` | GlobalTech Solutions HR Feb 2026 — headcount, salaries | Warm corporate HR dashboard with KPI tiles |
+| `sales` | TechCorp Q4 2025 | Revenue, expenses, profit, departments, products, monthly revenue |
+| `analytics` | dashboard.app Jan 2026 | Visitors, page views, bounce rate, traffic sources, top pages, devices |
+| `hr` | GlobalTech Solutions Feb 2026 | Headcount, hires, attrition, departments with salaries, diversity |
 
-`loadSample(type)` fills **both** the JSON textarea and the prompt textarea, updates the char counter, clears any errors, and focuses the prompt field.
+- **`SAMPLE_PROMPTS`**: Matching design prompt strings for each dataset.
 
-**SSE Event Handling (in `handleSubmit`):**
+#### 5.4b `utils/dom.js` — DOM Utility Functions
+
+Four exported functions. All receive their DOM targets as **arguments** (no module-level queries), making them testable and reusable:
+
+| Function | Signature | Purpose |
+|----------|-----------|--------|
+| `showError()` | `(containerEl, textEl, msg)` | Sets `textContent` + adds `.error-message--visible` class |
+| `hideError()` | `(containerEl)` | Removes `.error-message--visible` class |
+| `setLoading()` | `(btnEl, textEl, spinnerEl, isLoading)` | Toggles button disabled/text/spinner |
+| `validateJSON()` | `(str)` → `{valid, error?}` | `JSON.parse()` in try/catch |
+
+#### 5.4c `services/streamClient.js` — SSE Streaming Client
+
+Exports the `StreamClient` class. Zero DOM knowledge — communicates results via callbacks.
+
+**Constructor:** `new StreamClient(url)` — takes the API endpoint (e.g. `/api/generate-stream`).
+
+**`stream(payload, callbacks)` method:**
 
 ```
-fetch POST /api/generate-stream
-→ getReader() on response.body
-→ loop: read chunks → decode → split on "\n\n"
-→ for each SSE event block:
-    parse "event: <type>" and "data: <json>"
+async stream(payload, { onChunk, onRetry, onDone, onError }):
+    response = await fetch(url, POST, JSON body)
 
-    "error"  → showError(), setStreamError(), return
-    "retry"  → reset rawStreamedCode, liveCodeOutput.innerHTML,
-               renderedLineCount, statsChars → show "Retrying…"
-    "done"   → store generatedHTML, setStreamDone(),
-               show download btn, setTimeout(switchView('preview'), 800ms)
-    default  → if parsed.chunk:
-                   rawStreamedCode += chunk
-                   renderCodeLines(rawStreamedCode)
-                   update statsChars
-                   requestAnimationFrame(scroll to bottom)
+    if !response.ok → parse error JSON → onError(msg) → return
+
+    reader = response.body.getReader()
+    buffer = ''
+
+    while read():
+        buffer += decode(value)
+        events = buffer.split('\n\n')
+        buffer = events.pop()          ← keep incomplete chunk
+
+        for each eventBlock:
+            parse 'event: <type>' and 'data: <json>'
+
+            'error'  → onError(parsed.error) → return
+            'retry'  → onRetry(parsed) → continue
+            'done'   → onDone(parsed.html) → return
+            default  → onChunk(parsed.chunk)
+
+    onError('Stream ended unexpectedly.')
 ```
 
-**`renderCodeLines(code)` — Incremental DOM rendering:**
+Guards: `AbortError` → timeout message; other errors → network error message.
 
-Avoids re-rendering already-displayed lines. Uses a `renderedLineCount` cursor:
-1. **Update last line** (may have been a partial line from previous chunk).
-2. **Append only new lines** using `DocumentFragment` (batched DOM insert — no reflow per line).
+#### 5.4d `generator.js` — Page Orchestrator
+
+Imports all three modules and wires them together via a **centralized state object** and a **single `render()` function**.
+
+**Imports:**
+```javascript
+import { SAMPLES, SAMPLE_PROMPTS } from './data/samples.js';
+import { showError, hideError, setLoading, validateJSON } from './utils/dom.js';
+import { StreamClient } from './services/streamClient.js';
+```
+
+**State object:**
+
+| Key | Type | Purpose |
+|-----|------|---------|
+| `isGenerating` | `boolean` | Controls button disabled state and spinner |
+| `view` | `'code'\|'preview'` | Active tab |
+| `streamStatus` | `'idle'\|'streaming'\|'retrying'\|'done'\|'error'` | Status indicator dot + label |
+| `errorMessage` | `string\|null` | Error banner content |
+| `generatedHTML` | `string\|null` | Final sanitised HTML for preview/download |
+| `rawCode` | `string` | Accumulated raw chunks for live code view |
+| `charCount` | `number` | Character count displayed in stats bar |
+| `iframeSrcdocSet` | `boolean` | Guards against iframe reload on tab switches |
+
+**`render()` function:** Single function that reconciles the entire UI from `state`. Every user action or stream callback mutates state, then calls `render()`. Handles:
+- Generate button loading state
+- Error display show/hide
+- Download button visibility
+- Stats bar (char count, streaming dot color + label)
+- Tab active states
+- Panel visibility (placeholder / code view / preview iframe)
+- Iframe srcdoc injection (guarded by `iframeSrcdocSet`)
+
+**`renderCodeLines(code)` — Incremental DOM rendering (XSS-proof):**
+
+Uses **programmatic DOM construction** with `textContent` exclusively — no `innerHTML` — making it 100% XSS-proof regardless of LLM output. Uses a `renderedLineCount` cursor:
+1. **Update last line** (may have been a partial line from previous chunk) via `textContent`.
+2. **Append only new lines** using `DocumentFragment` + `document.createElement()` (batched DOM insert — no reflow per line).
 3. Increment `renderedLineCount`.
 
-**`switchView(view)` — Tab switching:**
-
-- `code` → show `liveCodeView`, hide `previewIframe`
-- `preview` → show `previewIframe`; set `srcdoc` **only once** per generation (guarded by `iframeSrcdocSet`). Sets `iframe.onload` to auto-resize to content height.
+**`handleSubmit()` flow:**
+1. Client-side validation (JSON parse + prompt checks)
+2. Reset state to `streaming`, clear code view
+3. Call `client.stream()` with 4 callbacks:
+   - `onChunk` → append to `rawCode`, call `renderCodeLines()`, auto-scroll
+   - `onRetry` → reset code view, set status to `retrying`
+   - `onDone` → store HTML, set `done`, auto-switch to preview after 800ms
+   - `onError` → set error message
+4. Safety catch: if stream ends without `onDone`/`onError`, force error state
 
 ---
 
@@ -390,11 +469,21 @@ The `sandbox` attribute values explained:
 
 ---
 
-### 5.7 `static/css/style.css` — Design System
+### 5.7 `static/css/` — Design System (Modular)
 
-1362 lines of vanilla CSS. Organised sections:
+The design system uses **native CSS `@import`** for modularisation. The main `style.css` is a ~35-line import manifest; the browser resolves paths relative to it.
 
-**Design Tokens (`--` CSS variables):**
+**Module structure:**
+
+| Directory | Files | Purpose |
+|-----------|-------|---------|
+| `base/` | `_variables.css`, `_reset.css`, `_typography.css` | Design tokens, box-model reset, heading/text utilities |
+| `layout/` | `_grid.css`, `_navigation.css`, `_footer.css`, `_generator-layout.css` | Page structure and navigation |
+| `components/` | `_buttons.css`, `_cards.css`, `_badges.css`, `_forms.css`, `_errors.css`, `_spinner.css`, `_preview.css`, `_code-view.css`, `_history.css` | UI components |
+| `effects/` | `_backgrounds.css`, `_animations.css` | Background orbs, fade-in animations |
+| `responsive/` | `_breakpoints.css` | All `@media` queries (1024px, 768px, 480px) |
+
+**Design Tokens (`base/_variables.css`):**
 
 | Category | Variables | Example Values |
 |----------|-----------|----------------|
@@ -406,24 +495,24 @@ The `sandbox` attribute values explained:
 | Radius | `--radius-sm/md/lg/xl` | 8px → 24px |
 | Transitions | `--transition-fast/normal/slow` | `150ms cubic-bezier(0.4,0,0.2,1)` |
 
-**Key animations:**
+**Key animations (across `effects/` and `components/`):**
 
-| Keyframe | Usage | Effect |
-|----------|-------|--------|
-| `orbFloat1/2/3` | Background gradient orbs | Slow float, 18–25s loops |
-| `pulse-dot` | Badge indicator dot | Pulse opacity + scale |
-| `pulseDot` | Streaming status dot | Amber pulse during generation |
-| `spin` | Button spinner | 360° rotation, 0.75s |
-| `slideIn` | Error message | Fade + translateY(-8px→0) |
-| `fadeInUp` | Landing page sections | Staggered entrance animation |
+| Keyframe | File | Effect |
+|----------|------|--------|
+| `orbFloat1/2/3` | `effects/_backgrounds.css` | Slow float, 18–25s loops |
+| `pulse-dot` | `components/_badges.css` | Pulse opacity + scale |
+| `pulseDot` | `components/_preview.css` | Amber pulse during generation |
+| `spin` | `components/_spinner.css` | 360° rotation, 0.75s |
+| `slideIn` | `components/_errors.css` | Fade + translateY(-8px→0) |
+| `fadeInUp` | `effects/_animations.css` | Staggered entrance animation |
 
 **Generator-specific components:**
 
-- `.generator-layout` — CSS Grid: `300px sidebar | 1fr main`
-- `.live-code-view` — `display: table` container; each `.code-line` is `display: table-row`; `.code-line__num` is sticky left column (line numbers); `.code-line__text` is `white-space: pre` to preserve indentation
-- `.preview-stats__dot--streaming` — amber pulsing dot; `--done` = green glow; `--error` = red glow
-- `.btn--sample` — small pill buttons below JSON textarea
-- `.char-counter` — turns amber at 450 chars, red at 500 chars
+- `.generator-layout` (`layout/_generator-layout.css`) — CSS Grid: `420px sidebar | 1fr main`
+- `.live-code-view` (`components/_code-view.css`) — `display: table` container; each `.code-line` is `display: table-row`; `.code-line__num` is sticky left column (line numbers); `.code-line__text` is `white-space: pre` to preserve indentation
+- `.preview-stats__dot--streaming` (`components/_preview.css`) — amber pulsing dot; `--done` = green glow; `--error` = red glow
+- `.btn--sample` (`components/_buttons.css`) — small pill buttons below JSON textarea
+- `.char-counter` (`components/_forms.css`) — turns amber at 450 chars, red at 500 chars
 
 ---
 

@@ -1,0 +1,21 @@
+/* ==========================================================================
+   Grid & Sections — Container, section spacing
+   ========================================================================== */
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 24px;
+    position: relative;
+    z-index: 1;
+}
+
+/* --- Sections --- */
+.section {
+    padding: 100px 0;
+}
+
+.section--hero {
+    padding: 180px 0 100px;
+    text-align: center;
+}

@@ -44,6 +44,18 @@ Adopted a "Premium Dark" aesthetic using modern CSS variables and glassmorphism.
 - **CSS**: 100% custom CSS (no Tailwind/Bootstrap) to demonstrate mastery of fundamentals.
 - **Interactive Elements**: Subtle hover states, loading skeletons, and smooth transitions enhance perceived performance.
 
+### Phase 7: Architecture Refactoring (JS Modularization)
+The monolithic `generator.js` was decomposed into ES6 modules with a clean separation of concerns.
+- **Decision**: Split by responsibility — data (`data/samples.js`), DOM utilities (`utils/dom.js`), network (`services/streamClient.js`), and orchestration (`generator.js`).
+- **State-Driven UI**: Introduced a centralized `state` object and a single `render()` function that reconciles the entire UI from state. Every user action or stream callback mutates state, then calls `render()`.
+- **XSS Hardening**: Replaced all `innerHTML` usage with `textContent` and programmatic DOM construction. The `renderCodeLines()` function builds each `<div>` and `<span>` via `document.createElement()` — 100% XSS-proof.
+- **Benefit**: Each module is independently testable, and the orchestrator is trivially understandable.
+
+### Phase 8: Codebase Hygiene (CSS Modularization + Prompt Extraction)
+Two structural refactors to reduce cognitive load and file-level risk.
+- **CSS Split**: The 1,362-line monolithic `style.css` was decomposed into 19 focused files across `base/`, `layout/`, `components/`, `effects/`, and `responsive/` directories. The main `style.css` became a ~35-line table of contents using native CSS `@import`. No HTML changes were needed — both templates still reference `/static/css/style.css`.
+- **Prompt Extraction**: The `SYSTEM_PROMPT` string was moved from `services/llm_service.py` into a new `config/prompts.py` module. The service now imports it via `from config.prompts import SYSTEM_PROMPT`. This creates a clean boundary: `llm_service.py` handles network execution, `prompts.py` handles AI behavior tuning.
+
 ---
 
 ## 🛠 Feature-by-Feature Technical Analysis
@@ -101,6 +113,9 @@ Adopted a "Premium Dark" aesthetic using modern CSS variables and glassmorphism.
 /
 ├── api/
 │   └── index.py
+├── config/
+│   ├── __init__.py
+│   └── prompts.py
 ├── services/
 │   └── llm_service.py
 ├── utils/
@@ -110,8 +125,23 @@ Adopted a "Premium Dark" aesthetic using modern CSS variables and glassmorphism.
 │   └── generate.html
 ├── static/
 │   ├── css/
+│   │   ├── style.css             ← @import manifest
+│   │   ├── base/                 ← _variables, _reset, _typography
+│   │   ├── layout/               ← _grid, _navigation, _footer, _generator-layout
+│   │   ├── components/           ← _buttons, _cards, _badges, _forms, _errors,
+│   │   │                            _spinner, _preview, _code-view, _history
+│   │   ├── effects/              ← _backgrounds, _animations
+│   │   └── responsive/           ← _breakpoints
 │   └── js/
+│       ├── generator.js          ← orchestrator (state-driven render)
+│       ├── data/
+│       │   └── samples.js        ← sample JSON + prompts
+│       ├── utils/
+│       │   └── dom.js            ← DOM helpers
+│       └── services/
+│           └── streamClient.js   ← SSE streaming client
 └── docs/
     ├── INSTRUCTION_MANUAL.md
-    └── PROJECT_LOG.md
+    ├── PROJECT_LOG.md
+    └── project_doc.md
 ```

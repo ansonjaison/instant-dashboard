@@ -1,0 +1,14 @@
+/* ==========================================================================
+   Footer
+   ========================================================================== */
+
+.footer {
+    padding: 40px 0;
+    border-top: 1px solid var(--border-subtle);
+    text-align: center;
+}
+
+.footer__text {
+    font-size: 0.82rem;
+    color: var(--text-muted);
+}

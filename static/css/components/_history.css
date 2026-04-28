@@ -1,0 +1,32 @@
+/* ==========================================================================
+   History — Dashboard history panel items
+   ========================================================================== */
+
+.history-item {
+    padding: 12px 16px;
+    background: var(--bg-glass);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: var(--transition-fast);
+}
+
+.history-item:hover {
+    background: var(--bg-glass-hover);
+    border-color: var(--border-accent);
+}
+
+.history-item__prompt {
+    font-size: 0.82rem;
+    color: var(--text-primary);
+    font-weight: 500;
+    margin-bottom: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.history-item__time {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+}

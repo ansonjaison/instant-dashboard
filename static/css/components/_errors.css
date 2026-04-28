@@ -1,0 +1,38 @@
+/* ==========================================================================
+   Error Message — Alert banner with slide-in animation
+   ========================================================================== */
+
+.error-message {
+    display: none;
+    padding: 14px 18px;
+    background: rgba(239, 68, 68, 0.08);
+    border: 1px solid rgba(239, 68, 68, 0.25);
+    border-radius: var(--radius-md);
+    color: #fca5a5;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    animation: slideIn 0.3s ease;
+}
+
+.error-message--visible {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+}
+
+.error-message__icon {
+    flex-shrink: 0;
+    margin-top: 1px;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}

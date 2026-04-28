@@ -1,0 +1,46 @@
+/* ==========================================================================
+   Variables — Colors, fonts, shadows, spacing, transitions
+   ========================================================================== */
+
+:root {
+    /* Background palette */
+    --bg-primary: #0a0e1a;
+    --bg-secondary: #0f1629;
+    --bg-tertiary: #141c33;
+    --bg-card: rgba(20, 28, 51, 0.65);
+    --bg-glass: rgba(255, 255, 255, 0.03);
+    --bg-glass-hover: rgba(255, 255, 255, 0.06);
+
+    /* Accent palette */
+    --accent-primary: #6366f1;
+    --accent-secondary: #818cf8;
+    --accent-glow: rgba(99, 102, 241, 0.25);
+    --accent-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a78bfa 100%);
+    --accent-gradient-warm: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%);
+    --accent-gradient-cool: linear-gradient(135deg, #06b6d4 0%, #6366f1 100%);
+
+    /* Text palette */
+    --text-primary: #f1f5f9;
+    --text-secondary: #94a3b8;
+    --text-muted: #64748b;
+    --text-accent: #a5b4fc;
+
+    /* Surface */
+    --border-subtle: rgba(255, 255, 255, 0.06);
+    --border-accent: rgba(99, 102, 241, 0.3);
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 8px 40px rgba(0, 0, 0, 0.5);
+    --shadow-glow: 0 0 40px rgba(99, 102, 241, 0.15);
+
+    /* Spacing */
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-xl: 24px;
+
+    /* Transitions */
+    --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-normal: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-slow: 400ms cubic-bezier(0.4, 0, 0.2, 1);
+}
