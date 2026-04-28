@@ -26,13 +26,14 @@ graph TD
     UI -->|POST /api/generate-stream| API[Flask API]
     API -->|Validate Input| Validator[Validator Utils]
     API -->|Stream Request| Service[LLM Service]
-    Service -->|Stream Response| LLM[Big Pickle API]
+    Service -->|Stream Response| LLM[LLM API]
     LLM -->|SSE Chunks| Service
     Service -->|Yield Chunk| API
     API -->|SSE Data Event| UI
     API -->|Buffer & Validate| Validator
-    Validator -->|Final Clean HTML| API
-    API -->|SSE Done Event| UI
+    Validator -->|Invalid?| Retry[Trigger Auto-Retry (Max 3)]
+    Retry -->|Valid?| Clean[Final Clean HTML]
+    Clean -->|SSE Done Event| UI
     UI -->|Render| Iframe[Sandboxed Iframe]
 ```
 
@@ -75,16 +76,18 @@ Client-side validation occurs before any network request:
 2.  **Validation**:
     - `validate_json_input`: Re-verifies JSON parseability.
     - `validate_prompt`: Checks length constraints.
-3.  **LLM Integration**:
-    - Constructs system prompt + user JSON.
-    - Calls `services.llm_service.stream_llm`.
+3.  **LLM Integration & Auto-Retry Loop**:
+    - Initiates a retry loop (up to 3 attempts) in case the LLM API routes to an incompatible model (e.g., reasoning-only model failing structure).
+    - Constructs system prompt + user JSON and calls `services.llm_service.stream_llm`.
 4.  **Streaming Response**:
-    - Yields `data: {"chunk": "..."}` events for each token.
+    - Yields `event: data` payload `{"chunk": "..."}` for each token.
+    - Handles reasoning model variations (e.g., buffering `delta.reasoning` if `delta.content` is empty).
     - Accumulates full content in memory.
 5.  **Finalisation**:
-    - Once stream ends, passes full content to `validate_html_output`.
+    - Once stream ends, passes full content to `validate_html_output` (trims preamble, enforces DOCTYPE, sanitises URIs).
     - If valid, yields `event: done` with the sanitised HTML.
-    - If invalid, yields `event: error`.
+    - If invalid and retries remain, yields `event: retry` causing client to reset view.
+    - If invalid and retries exhausted, yields `event: error`.
 
 ---
 
@@ -101,19 +104,19 @@ This application is **Stateless**. No user data is persisted.
 ## SECTION E – Authentication Flow
 
 ### Service Authentication
-- **API Keys**: Access to Big Pickle is secured via `BIG_PICKLE_API_KEY`.
-- **Environment Variables**: Injected at runtime.
+- **API Keys**: Access to the LLM API is secured via `LLM_API_KEY`.
+- **Environment Variables**: Injected at runtime (`LLM_API_KEY`, `LLM_MODEL`, `LLM_API_URL`).
 
 ---
 
 ## SECTION F – Integration Points
 
 ### External APIs
-1.  **Big Pickle (OpenCode.ai)**
-    - **Endpoint**: Configurable via `BIG_PICKLE_API_URL`
+1.  **OpenAI-Compatible LLM API (e.g. OpenCode.ai, NVIDIA NIM)**
+    - **Endpoint**: Configurable via `LLM_API_URL`
     - **Method**: POST
     - **Headers**: `Authorization: Bearer <KEY>`
-    - **Features**: SSE Streaming for real-time code generation.
+    - **Features**: SSE Streaming, handles standard `content` or `reasoning` chunk patterns.
 
 ---
 
@@ -123,9 +126,9 @@ This application is **Stateless**. No user data is persisted.
 - **Double Validation**: JSON parsed on client and server.
 - **Size Limits**: Prompts capped at 500 chars.
 
-### 2. Output Sanitisation (XSS Prevention)
-- **Server-Side**: Regex-based removal of `<script>`, `javascript:`, and `on*` handlers.
-- **Client-Side**: `iframe sandbox` attribute blocks script execution even if sanitisation fails.
+### 2. Output Sanitisation & Sandboxing (XSS Prevention)
+- **Server-Side**: Regex-based removal of malicious `javascript:` URIs from attributes. (Note: `<script>` tags and standard event handlers are intentionally allowed for dashboard interactivity).
+- **Client-Side**: The generated HTML is safely rendered in an `iframe` with the `sandbox="allow-same-origin allow-scripts"` attribute. This allows the dashboard's own JavaScript to execute (for charts/animations), but completely blocks access to the parent page DOM, prevents form submissions, and disables popups.
 
 ### 3. Data Privacy
 - No user data logged to persistent storage.

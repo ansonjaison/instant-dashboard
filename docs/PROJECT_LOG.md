@@ -17,20 +17,27 @@ The `api/index.py` was constructed to serve two primary HTML pages and one API e
 - **Challenge**: Initial JSON parsing errors were common with malformed user input.
 - **Solution**: Implemented robust `try/except` blocks around `json.loads` server-side, with specific error messages returned to help the user fix their input.
 
-### Phase 3: LLM Integration (Big Pickle)
-Integrated **Big Pickle** (via OpenCode.ai).
+### Phase 3: LLM Integration
+Integrated a provider-agnostic, OpenAI-compatible service layer (`llm_service.py`).
 - **Early Issue**: Standard synchronous requests were slow for large generations.
-- **Refinement**: Switched the internal service layer (`llm_service.py`) to use **Streaming (SSE)**.
+- **Refinement**: Switched the internal service layer to use **Streaming (SSE)**.
 - **Expansion**: Exposed a new `/api/generate-stream` endpoint. This allows the frontend to display the generated code character-by-character as it arrives, significantly improving perceived performance (Time To First Byte).
 
 ### Phase 4: Security Hardening (Crucial)
 Given the core function is "generating HTML from user input", XSS was the primary threat vector.
-- **Mitigation 1**: Python-based sanitisation in `utils.validator.py`.
-    - Regex to strip `<script>` tags.
-    - Regex to strip `on*` event handlers.
-    - Regex to force `<!DOCTYPE html>` structure.
-- **Mitigation 2**: `iframe sandbox` attribute on the frontend.
-    - The generated HTML is rendered in a sandboxed iframe without `allow-scripts`, neutralizing any potential script execution that bypasses the sanitizer.
+- **Mitigation 1 (Server)**: Python-based sanitisation in `utils.validator.py`.
+    - Regex to strip malicious `javascript:` URIs from `href`/`src` attributes.
+    - Regex to force `<!DOCTYPE html>` structure and strip enclosing markdown fences.
+    - *Note: `<script>` tags are intentionally preserved to allow interactive dashboard charts/logic.*
+- **Mitigation 2 (Client)**: `iframe sandbox` attribute on the frontend.
+    - Rendered in a sandbox with `allow-scripts` (so charts work) but *without* `allow-top-navigation`, `allow-popups`, or `allow-forms`, neutralizing any potential script escalation or navigation hijacking.
+
+### Phase 6: Model Routing & Retry Resiliency
+When using OpenRouter or similar gateways, API calls are sometimes routed to "reasoning models" (e.g. MiniMax M2.5) that output tokens in `delta.reasoning` instead of `delta.content`, or return invalid HTML (just "thinking" text).
+- **Solution Parts**:
+  1.  **Reasoning Fallback**: `llm_service.py` buffers `delta.reasoning` chunks if `delta.content` is absent.
+  2.  **Auto-Retry Loop**: The Flask route initiates a 3-attempt retry loop. If a reasoning model fails validation, it silently retries, giving the router another chance to pick a structural model.
+  3.  **UI Feedback**: A new `retry` SSE event tells the client to reset the live code view during retries.
 
 ### Phase 5: UI Polish
 Adopted a "Premium Dark" aesthetic using modern CSS variables and glassmorphism.
@@ -52,12 +59,12 @@ Adopted a "Premium Dark" aesthetic using modern CSS variables and glassmorphism.
 > "Use ONLY the data provided in the JSON. Do NOT fabricate, estimate, calculate new values... return only valid HTML."
 **Outcome**: High fidelity data representation in the generated dashboards.
 
-### 3. Big Pickle Streaming
+### 3. LLM Streaming & Retry Engine
 **Trade-off**: Complexity vs. Reliability.
-**Decision**: Implemented an SSE-based generator in Python (`stream_llm`).
+**Decision**: Implemented an SSE-based generator in Python (`stream_llm`) with an auto-retry wrapper.
 - **Flow**: The client connects to `text/event-stream`.
-- **Logic**: Python yields chunks immediately. Once the LLM finishes, Python validates the *complete* buffer before sending the final `done` event.
-- **Benefit**: If validation fails, the user is notified immediately at the end of the stream, rather than seeing broken HTML.
+- **Logic**: Python yields chunks immediately. Once the LLM finishes, Python validates the *complete* buffer.
+- **Benefit**: If validation fails (e.g. bad model routing), the server catches it, triggers an `event: retry` to reset the UI, and automatically tries again up to 3 times before failing.
 
 ---
 

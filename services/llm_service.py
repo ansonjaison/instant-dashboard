@@ -43,12 +43,15 @@ def _build_payload(json_data: str, user_prompt: str) -> tuple:
     Raises:
         ValueError: If the API key is not configured.
     """
-    api_key = os.environ.get("BIG_PICKLE_API_KEY")
-    model = os.environ.get("BIG_PICKLE_MODEL", "big-pickle")
+    api_key = os.environ.get("LLM_API_KEY")
+    model = os.environ.get("LLM_MODEL", "minimax-m2.5-free")
     api_url = os.environ.get(
-        "BIG_PICKLE_API_URL",
+        "LLM_API_URL",
         "https://opencode.ai/zen/v1/chat/completions",
     )
+
+    logger.info("API URL: %s | Model: %s | Key present: %s (len=%d)",
+                api_url, model, bool(api_key), len(api_key or ""))
 
     if not api_key:
         raise ValueError("Server configuration error: API key missing.")
@@ -70,8 +73,9 @@ def _build_payload(json_data: str, user_prompt: str) -> tuple:
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": user_message},
         ],
-        "max_tokens": 16000,
+        "max_tokens": 8000,
         "temperature": 0.3,
+        "top_p": 0.7,
         "stream": True,
     }
 
@@ -105,6 +109,9 @@ def stream_llm(json_data: str, user_prompt: str):
             stream=True,
         )
 
+        logger.info("API response status: %d", response.status_code)
+        logger.info("API response headers: %s", dict(response.headers))
+
         if response.status_code != 200:
             error_detail = response.text[:300]
             logger.error(
@@ -116,11 +123,15 @@ def stream_llm(json_data: str, user_prompt: str):
                 f"LLM API returned status {response.status_code}. Please try again."
             )
 
+        chunk_count = 0
+        reasoning_buf = ""  # fallback for reasoning-only models
+
         for line in response.iter_lines():
             if not line:
                 continue
 
             line = line.decode("utf-8")
+            logger.debug("RAW LINE: %s", line[:300])
 
             if not line.strip() or line.startswith(":"):
                 continue
@@ -129,19 +140,40 @@ def stream_llm(json_data: str, user_prompt: str):
                 data_str = line[6:]
 
                 if data_str.strip() == "[DONE]":
+                    logger.info("Stream done. Total chunks yielded: %d", chunk_count)
                     break
 
                 try:
                     chunk_data = json.loads(data_str)
-                    delta = chunk_data.get("choices", [{}])[0].get("delta", {})
+                    choices = chunk_data.get("choices") or []
+                    if not choices:
+                        continue
+                    delta = choices[0].get("delta", {})
                     chunk_content = delta.get("content", "")
+                    chunk_reasoning = delta.get("reasoning", "") or ""
 
                     if chunk_content:
+                        chunk_count += 1
                         yield chunk_content
+                    elif chunk_reasoning:
+                        # Reasoning model: accumulate reasoning text as fallback
+                        reasoning_buf += chunk_reasoning
 
                 except json.JSONDecodeError as exc:
                     logger.warning("Failed to parse streaming chunk: %s", exc)
                     continue
+
+        if chunk_count == 0:
+            if reasoning_buf.strip():
+                # Reasoning model returned content only in delta.reasoning —
+                # yield the entire accumulated reasoning as one chunk.
+                logger.warning(
+                    "content was empty; falling back to reasoning field (%d chars).",
+                    len(reasoning_buf),
+                )
+                yield reasoning_buf
+            else:
+                logger.warning("Stream ended with ZERO content chunks.")
 
     except requests.exceptions.Timeout:
         logger.error("Big Pickle API request timed out.")

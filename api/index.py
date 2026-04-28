@@ -138,32 +138,51 @@ def api_generate_stream():
 
     logger.info("Streaming LLM with %d bytes of JSON and prompt: '%s'", len(json_data), user_prompt[:80])
 
+    MAX_ATTEMPTS = 3
+
     def event_stream():
         """Yield SSE-formatted events from the LLM stream."""
-        full_content = ""
-        try:
-            for chunk in stream_llm(json_data, user_prompt):
-                full_content += chunk
-                yield f"data: {json.dumps({'chunk': chunk})}\n\n"
+        for attempt in range(1, MAX_ATTEMPTS + 1):
+            full_content = ""
+            try:
+                for chunk in stream_llm(json_data, user_prompt):
+                    full_content += chunk
+                    yield f"data: {json.dumps({'chunk': chunk})}\n\n"
 
-            if not full_content.strip():
-                yield f"event: error\ndata: {json.dumps({'error': 'LLM returned empty content.'})}\n\n"
+                if not full_content.strip():
+                    if attempt < MAX_ATTEMPTS:
+                        logger.warning("Attempt %d: empty content, retrying...", attempt)
+                        continue
+                    yield f"event: error\ndata: {json.dumps({'error': 'LLM returned empty content.'})}\n\n"
+                    return
+
+                # Validate & sanitise the complete HTML
+                html_result = validate_html_output(full_content)
+
+                if not html_result["valid"]:
+                    logger.warning(
+                        "Attempt %d/%d: LLM output failed validation: %s",
+                        attempt, MAX_ATTEMPTS, html_result["error"]
+                    )
+                    if attempt < MAX_ATTEMPTS:
+                        # Signal client to reset the live code view for the retry
+                        yield f"event: retry\ndata: {json.dumps({'attempt': attempt})}\n\n"
+                        continue
+                    yield f"event: error\ndata: {json.dumps({'error': html_result['error']})}\n\n"
+                    return
+
+                logger.info(
+                    "Successfully streamed dashboard HTML (%d bytes) on attempt %d",
+                    len(html_result["html"]), attempt
+                )
+                yield f"event: done\ndata: {json.dumps({'html': html_result['html']})}\n\n"
                 return
 
-            # Validate & sanitise the complete HTML
-            html_result = validate_html_output(full_content)
-
-            if not html_result["valid"]:
-                logger.warning("Streamed LLM output failed validation: %s", html_result["error"])
-                yield f"event: error\ndata: {json.dumps({'error': html_result['error']})}\n\n"
+            except Exception as exc:
+                logger.error("Stream error on attempt %d: %s", attempt, exc)
+                yield f"event: error\ndata: {json.dumps({'error': str(exc)})}\n\n"
                 return
 
-            logger.info("Successfully streamed dashboard HTML (%d bytes)", len(html_result["html"]))
-            yield f"event: done\ndata: {json.dumps({'html': html_result['html']})}\n\n"
-
-        except Exception as exc:
-            logger.error("Stream error: %s", exc)
-            yield f"event: error\ndata: {json.dumps({'error': str(exc)})}\n\n"
 
     return Response(
         event_stream(),

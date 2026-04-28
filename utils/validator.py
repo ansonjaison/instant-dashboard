@@ -51,40 +51,37 @@ def validate_prompt(prompt: str, max_length: int = 500) -> dict:
 def strip_markdown_fences(html: str) -> str:
     """Strip markdown code fences that LLMs sometimes wrap around HTML.
 
-    Handles ````` ```html ... ``` `````, ````` ```HTML ... ``` `````,
-    and plain ````` ``` ... ``` `````.
+    Handles fences anywhere in the string, including after preamble text
+    like "Here is your dashboard:\n\n```html\n...".
     """
     stripped = html.strip()
 
-    # Remove opening markdown fence
-    stripped = re.sub(r"^```(?:html|HTML)?\s*\n?", "", stripped)
+    # Try to extract the content of a ```html ... ``` or ``` ... ``` block
+    fence_match = re.search(
+        r"```(?:html|HTML)?[ \t]*\r?\n([\s\S]*?)\n?[ \t]*```",
+        stripped,
+    )
+    if fence_match:
+        return fence_match.group(1).strip()
 
-    # Remove closing markdown fence
-    stripped = re.sub(r"\n?```\s*$", "", stripped)
-
+    # Fallback: strip a leading fence line and a trailing fence line
+    stripped = re.sub(r"^```(?:html|HTML)?[ \t]*\r?\n?", "", stripped)
+    stripped = re.sub(r"\n?```[ \t]*$", "", stripped)
     return stripped.strip()
 
 
 def sanitize_html(html: str) -> str:
-    """Remove dangerous elements from HTML.
+    """Remove dangerous URI schemes from HTML.
 
-    Strips ``<script>`` tags, ``on*`` event handlers, and
-    ``javascript:`` protocol URIs.
+    Inline ``<script>`` blocks and ``on*`` event handlers are intentionally
+    **kept** so that dashboards can be interactive.  Safety is enforced by
+    the sandboxed ``<iframe>`` in the front-end (``allow-scripts`` without
+    ``allow-top-navigation`` or ``allow-popups``).
+
+    What IS stripped:
+      - ``javascript:`` protocol in ``href`` / ``src`` attributes.
     """
-    # Remove <script>…</script> tags and content
-    sanitized = re.sub(
-        r"<script\b[^>]*>[\s\S]*?</script>", "", html, flags=re.IGNORECASE
-    )
-
-    # Remove standalone <script> tags (self-closing or unclosed)
-    sanitized = re.sub(
-        r"<script\b[^>]*/?\\s*>", "", sanitized, flags=re.IGNORECASE
-    )
-
-    # Remove on* event handlers from tags
-    sanitized = re.sub(r'\bon\w+\s*=\s*"[^"]*"', "", sanitized, flags=re.IGNORECASE)
-    sanitized = re.sub(r"\bon\w+\s*=\s*'[^']*'", "", sanitized, flags=re.IGNORECASE)
-    sanitized = re.sub(r"\bon\w+\s*=\s*\S+", "", sanitized, flags=re.IGNORECASE)
+    sanitized = html
 
     # Remove javascript: protocol
     sanitized = re.sub(

@@ -114,6 +114,12 @@
         }, null, 2)
     };
 
+    const SAMPLE_PROMPTS = {
+        sales: 'Create a professional dark-themed executive dashboard with gradient KPI cards for revenue, expenses, and profit. Show department breakdown as a styled table and highlight top products with bold typography.',
+        analytics: 'Design a modern analytics dashboard with a clean white and blue color scheme. Use card-based layout for key metrics, display traffic sources in a visually distinct table, and show top pages with session times.',
+        hr: 'Build a corporate HR dashboard with a warm, professional palette. Feature employee stats as large KPI tiles, department breakdown in a clean table, and visualize diversity and work-mode split with clear sections.'
+    };
+
     // ── Event Listeners ───────────────────────────────────────────────────
     promptInput.addEventListener('input', updateCharCounter);
     btnGenerate.addEventListener('click', handleSubmit);
@@ -139,7 +145,10 @@
 
     function loadSample(type) {
         jsonInput.value = SAMPLES[type] || '';
-        jsonInput.focus();
+        promptInput.value = SAMPLE_PROMPTS[type] || '';
+        updateCharCounter();
+        hideError();
+        promptInput.focus();
     }
 
     function clearInputs() {
@@ -417,6 +426,17 @@
                             setStreamError();
                             setLoading(false);
                             return;
+                        }
+
+                        if (eventType === 'retry') {
+                            // Server is retrying (bad model was picked) — reset live view
+                            rawStreamedCode = '';
+                            liveCodeOutput.innerHTML = '';
+                            renderedLineCount = 0;
+                            statsChars.textContent = '0 chars';
+                            statsDot.className = 'preview-stats__dot preview-stats__dot--streaming';
+                            statsLabel.textContent = 'Retrying…';
+                            continue;
                         }
 
                         if (eventType === 'done') {
